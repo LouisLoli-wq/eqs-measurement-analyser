@@ -32,18 +32,50 @@ NIGHT = {
     "warn": "#F0903C", "danger": "#FF6B6B",
 }
 
-CSS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "assets", "theme.css")
+_ASSETS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                       "assets")
+
+CSS_PATH = os.path.join(_ASSETS, "theme.css")
+
+#: Equator Solar wordmark, transparent background so it sits on either theme.
+LOGO_PATH = os.path.join(_ASSETS, "equator-solar-logo.png")
+
+#: The ring from SOLAR, square, for the browser tab.
+FAVICON_PATH = os.path.join(_ASSETS, "favicon.png")
+
+
+def logo_path() -> str | None:
+    """The wordmark, or None if the file is missing."""
+    return LOGO_PATH if os.path.exists(LOGO_PATH) else None
+
+
+def favicon():
+    """Something st.set_page_config can use as page_icon.
+
+    The ring if it is there, a lightning bolt if it is not -- a missing image
+    should never stop the app loading.
+    """
+    return FAVICON_PATH if os.path.exists(FAVICON_PATH) else "\N{HIGH VOLTAGE SIGN}"
 
 
 def apply(st) -> None:
-    """Load the stylesheet into a Streamlit page."""
+    """Load the stylesheet and put the wordmark above the sidebar nav."""
     try:
         with open(CSS_PATH, encoding="utf-8") as fh:
             css = fh.read()
+        st.markdown("<style>%s</style>" % css, unsafe_allow_html=True)
     except OSError:
-        return                       # styling is a nicety, never a blocker
-    st.markdown("<style>%s</style>" % css, unsafe_allow_html=True)
+        pass                         # styling is a nicety, never a blocker
+
+    path = logo_path()
+    if path is None:
+        return
+    try:
+        # Streamlit 1.35+ puts this above the sidebar properly
+        st.logo(path, size="large")
+    except Exception:                                      # noqa: BLE001
+        with st.sidebar:
+            st.image(path, use_container_width=True)
 
 
 # ---------------------------------------------------------------------------

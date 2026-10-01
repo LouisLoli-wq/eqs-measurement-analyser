@@ -24,7 +24,7 @@ from src import adapters, analysis, config as cfg, file_detection as fd
 from src import reporting, sizing as sizing_mod, theme, validation as validation_mod
 
 st.set_page_config(page_title="EQS Measurement Analyser",
-                   page_icon="\N{HIGH VOLTAGE SIGN}", layout="wide")
+                   page_icon=theme.favicon(), layout="wide")
 theme.apply(st)
 
 PAGES = ["1 · Home",
@@ -121,7 +121,7 @@ analysis.Session.sweep_stale()
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    st.title("EQS Measurement Analyser")
+    st.markdown("#### Measurement Analyser")
     st.caption("Econ and Shelly load profiles")
     st.radio("Page", PAGES, key="page", label_visibility="collapsed")
     st.divider()
@@ -154,6 +154,8 @@ page = st.session_state.page
 # ===========================================================================
 
 if page == PAGES[0]:
+    # the wordmark sits above the sidebar nav on every page; repeating it here
+    # only gave a second, worse-scaled copy
     st.title("EQS Measurement Analyser")
     st.markdown(
         "Upload a load-profile export, set the plant details, and get the "

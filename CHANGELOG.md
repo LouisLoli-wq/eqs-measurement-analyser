@@ -12,6 +12,10 @@ All notable changes to this project are recorded here. Dates are ISO.
   form's left-rule callout for every message. Light and dark both follow the
   form's own `day` / `night` palettes. Tokens in `assets/theme.css`, loaded by
   `src/theme.py`; Streamlit's own keys in `.streamlit/config.toml`.
+- The Equator Solar wordmark, above the sidebar navigation on every page and
+  on the PDF report's cover. The ring from SOLAR, cropped square, is the
+  browser-tab icon. Both are in `assets/`; a missing file falls back rather
+  than stopping the app.
 - Optional switch to draw the charts in house colours. Off by default: every
   report issued so far used the notebooks' colours, and a chart that changes
   colour between reports invites the question of what else changed.

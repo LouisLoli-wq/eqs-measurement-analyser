@@ -16,8 +16,10 @@ changed on the way.
 The interface uses the palette and shapes of the Equator Solar "Site Visit &
 Data Capture" form, so the two tools look like they came from the same place.
 Tokens are in `assets/theme.css`, loaded by `src/theme.py`; Streamlit's own
-theme keys are in `.streamlit/config.toml`. Change the brand in those two
-files and nothing else.
+theme keys are in `.streamlit/config.toml`. The wordmark and the tab icon are
+`assets/equator-solar-logo.png` and `assets/favicon.png`. Change the brand in
+those four files and nothing else; a missing image falls back rather than
+stopping the app.
 
 The charts keep the notebooks' original colours unless you tick **Draw the
 charts in Equator Solar colours** in the optional settings. It is off by

@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 
-from . import config as cfg
+from . import config as cfg, theme
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +155,20 @@ def _pdf_cover(pdf, result):
     c = result.config
     fig = _new_page()
     y = 0.94
+
+    # wordmark, sized by its own aspect ratio so it is never stretched
+    logo = theme.logo_path()
+    if logo:
+        try:
+            art = plt.imread(logo)
+            width = 0.34
+            height = width * (art.shape[0] / art.shape[1]) * (8.27 / 11.69)
+            ax = fig.add_axes([0.08, y - height, width, height])
+            ax.imshow(art)
+            ax.axis("off")
+            y -= height + 0.035
+        except Exception:                                  # noqa: BLE001
+            pass
 
     fig.text(0.08, y, "Electricity measurement analysis",
              fontsize=20, weight="bold", va="top")
