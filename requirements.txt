@@ -1,0 +1,12 @@
+# Pinned to the minor version. Upgrade deliberately and re-run the tests:
+# the plotting code came from notebooks written against much older pandas and
+# matplotlib, and TECHNICAL_NOTES.md lists what had to change to reach these.
+streamlit>=1.42,<2.0
+pandas>=2.2,<3.1
+numpy>=1.26,<3.0
+matplotlib>=3.8,<4.0
+seaborn>=0.13,<0.15
+openpyxl>=3.1,<4.0
+
+# tests
+pytest>=8.0,<9.0

@@ -1,0 +1,57 @@
+# ---------------------------------------------------------------------------
+# Customer data. Nothing measured, uploaded or generated belongs in git.
+# ---------------------------------------------------------------------------
+*.csv
+# ...except the two public PVGIS irradiation profiles the app ships with.
+# Note: git treats a trailing "# comment" as part of the pattern, so these
+# negations must sit on lines of their own.
+!sample_data/irradiation_*.csv
+
+*.xlsx
+*.xls
+*.png
+*.pdf
+*.zip
+uploads/
+outputs/*
+!outputs/.gitkeep
+Graphs/
+eqs-analysis-*/
+
+# the original analysis notebooks: customer names and local paths
+*.ipynb
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------------------
+# Secrets and environment
+# ---------------------------------------------------------------------------
+.env
+.env.*
+*.key
+*.pem
+secrets.toml
+.streamlit/secrets.toml
+last_settings.json
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ---------------------------------------------------------------------------
+# Editors and OS
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
