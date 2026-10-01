@@ -11,6 +11,18 @@ changed on the way.
 
 ---
 
+## House style
+
+The interface uses the palette and shapes of the Equator Solar "Site Visit &
+Data Capture" form, so the two tools look like they came from the same place.
+Tokens are in `assets/theme.css`, loaded by `src/theme.py`; Streamlit's own
+theme keys are in `.streamlit/config.toml`. Change the brand in those two
+files and nothing else.
+
+The charts keep the notebooks' original colours unless you tick **Draw the
+charts in Equator Solar colours** in the optional settings. It is off by
+default because every report issued so far used the original colours.
+
 ## Contents
 
 - [What it does](#what-it-does)

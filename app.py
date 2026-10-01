@@ -21,16 +21,44 @@ import pandas as pd
 import streamlit as st
 
 from src import adapters, analysis, config as cfg, file_detection as fd
-from src import reporting, sizing as sizing_mod, validation as validation_mod
+from src import reporting, sizing as sizing_mod, theme, validation as validation_mod
 
 st.set_page_config(page_title="EQS Measurement Analyser",
-                   page_icon="Chart", layout="wide")
+                   page_icon="\N{HIGH VOLTAGE SIGN}", layout="wide")
+theme.apply(st)
 
 PAGES = ["1 · Home",
          "2 · Upload and configuration",
          "3 · Data validation",
          "4 · Analysis results",
          "5 · Downloads"]
+
+#: How many system-size boxes the interface offers.
+N_SIZES = 5
+
+#: Starting points for those boxes, as multiples of measured peak demand.
+#: These are candidates to simulate, not a recommendation -- the comparison on
+#: page 4 is what weighs them, and src/sizing.py holds the (unapproved)
+#: thresholds it uses.
+SIZE_LADDER = (0.5, 0.75, 1.0, 1.25, 1.5)
+
+
+def starting_sizes(peak_kw, fallback):
+    """Five sizes to pre-fill, spread around the measured peak demand."""
+    if not peak_kw or peak_kw <= 0:
+        return (list(fallback) + [0] * N_SIZES)[:N_SIZES]
+    sizes = []
+    for mult in SIZE_LADDER:
+        raw = peak_kw * mult
+        step = 1 if raw < 20 else (5 if raw < 100 else 10)
+        sizes.append(max(int(round(raw / step)) * step, step))
+    # keep them distinct so five boxes mean five simulations
+    out = []
+    for size in sizes:
+        while size in out:
+            size += 1
+        out.append(size)
+    return out
 
 BUNDLED_IRRADIATION = {
     "Kampala": "sample_data/irradiation_kampala.csv",
@@ -297,148 +325,152 @@ elif page == PAGES[1]:
         st.caption("Using the bundled **%s** profile. Upload a file above to "
                    "override it." % bundled)
 
-    # --- plant details ----------------------------------------------------
-    st.subheader("Customer and project")
-    d1, d2, d3 = st.columns(3)
-    with d1:
-        customer = st.text_input("Customer name", value="Customer",
-                                 help="Every chart title and every filename.")
-    with d2:
-        location = st.text_input("Site or location",
-                                 help="Report metadata only. Not used in any "
-                                      "calculation.")
-    with d3:
-        project_ref = st.text_input("Project reference",
-                                    help="Report metadata only.")
+    # --- client ------------------------------------------------------------
+    st.subheader("Client")
+    customer = st.text_input(
+        "Client name", value="Client",
+        help="Goes into every chart title and every filename.")
 
-    # --- analysis settings ------------------------------------------------
-    st.subheader("Analysis settings")
-    e1, e2, e3, e4 = st.columns(4)
-    with e1:
-        rate = st.number_input("Sample rate [min]", min_value=1, step=1,
-                               value=int(suggestions.get("RateMin", 1)),
-                               help="Read from the timestamps.")
-    with e2:
-        delta = st.number_input("Time offset [h]", value=0, step=1,
-                                help="+1 if the logger clock ran an hour "
-                                     "behind.")
-    with e3:
-        default_unit = 0 if suggestions.get("Yformat", 1.0) == 1.0 else 1
-        unit = st.selectbox("Power unit on the axis", ["kW", "W"],
-                            index=default_unit,
-                            help="Econ files are in kW; Shelly power is "
-                                 "derived in W.")
-    with e4:
-        st.caption("Restrict the period")
-        use_range = st.checkbox("Use a date range")
-
-    date_from = date_to = None
-    if use_range:
-        v = st.session_state.dataframe
-        f1, f2 = st.columns(2)
-        with f1:
-            date_from = st.date_input("From", value=None)
-        with f2:
-            date_to = st.date_input("To", value=None)
-        st.caption("Rows outside the range are excluded from this analysis "
-                   "only. Your file is not modified.")
-
-    st.subheader("Proposed system sizes")
-    g1, g2, g3 = st.columns([3, 1, 1])
-    with g1:
-        default_ppv = ", ".join(
-            str(s) for s in cfg.DEVICE_DEFAULTS[device]["PPV"])
-        sizes_text = st.text_input("Sizes to simulate [kWp]",
-                                   value=default_ppv,
-                                   help="Comma separated. Any number of "
-                                        "sizes.")
-    with g2:
-        eta = st.number_input("EtaPV", min_value=0.05, max_value=1.0,
-                              value=0.80, step=0.01, format="%.2f",
-                              help="Total efficiency, PV rated to AC out.")
-    with g3:
-        offset = st.number_input("Offset", min_value=0.0, max_value=0.9,
-                                 value=0.0, step=0.05, format="%.2f",
-                                 help="0.1 keeps simulated generation 10% "
-                                      "below consumption.")
-
-    try:
-        ppv = [int(round(float(p))) for p in sizes_text.replace(";", ",")
-               .split(",") if p.strip()]
-    except ValueError:
-        st.error("System sizes must be numbers, comma separated.")
-        st.stop()
+    # --- system sizes -------------------------------------------------------
+    st.subheader("System sizes to simulate")
+    peak_kw = suggestions.get("peak_kw")
+    defaults = starting_sizes(peak_kw, cfg.DEVICE_DEFAULTS[device]["PPV"])
+    if peak_kw:
+        st.caption("Five sizes in kWp, starting from your measured peak "
+                   "demand of **%.1f kW**. Change them to whatever you want "
+                   "compared; set a box to 0 to simulate fewer." % peak_kw)
+    else:
+        st.caption("Five sizes in kWp. Set a box to 0 to simulate fewer.")
+    size_cols = st.columns(N_SIZES)
+    ppv = []
+    for i, col in enumerate(size_cols):
+        with col:
+            value = st.number_input(
+                "Size %d [kWp]" % (i + 1), min_value=0.0, step=5.0,
+                value=float(defaults[i]), format="%.0f", key="ppv_%d" % i)
+        if value > 0:
+            ppv.append(int(round(value)))
+    ppv = sorted(set(ppv))
     if not ppv:
         st.error("Enter at least one system size.")
         st.stop()
 
-    # --- axes -------------------------------------------------------------
-    with st.expander("Axis ranges — filled in from your file, open to override"):
-        if suggestions:
-            st.caption("Proposed from the uploaded data: "
-                       + ", ".join("%s = %s" % kv
-                                   for kv in sorted(suggestions.items())))
-        conf = cfg.AnalysisConfig(device=device)
-        for key, value in suggestions.items():
-            if hasattr(conf, key):
-                setattr(conf, key, value)
+    # --- everything else is optional ---------------------------------------
+    conf = cfg.AnalysisConfig(device=device)
+    for key, value in suggestions.items():
+        if hasattr(conf, key):
+            setattr(conf, key, value)
 
-        a1, a2, a3 = st.columns(3)
-        with a1:
-            st.markdown("**Power**")
-            conf.Ymin = st.number_input("Ymin", value=float(conf.Ymin))
-            conf.Ymax = st.number_input("Ymax", value=float(conf.Ymax))
-            conf.Ydist = st.number_input("Y tick spacing",
-                                         value=float(conf.Ydist), min_value=0.001)
-            st.markdown("**Voltage [V]**")
-            conf.Umin = st.number_input("Umin", value=float(conf.Umin))
-            conf.Umax = st.number_input("Umax", value=float(conf.Umax))
-            conf.Udist = st.number_input("U tick spacing",
-                                         value=float(conf.Udist), min_value=0.001)
-        with a2:
-            st.markdown("**Current [A]**")
-            conf.Imin = st.number_input("Imin", value=float(conf.Imin))
-            conf.Imax = st.number_input("Imax", value=float(conf.Imax))
-            conf.Idist = st.number_input("I tick spacing",
-                                         value=float(conf.Idist), min_value=0.001)
-            st.markdown("**Power factor [-]**")
-            conf.PFmin = st.number_input("PF min", value=float(conf.PFmin))
-            conf.PFmax = st.number_input("PF max", value=float(conf.PFmax))
-            conf.PFdist = st.number_input("PF tick spacing",
-                                          value=float(conf.PFdist), min_value=0.001)
-        with a3:
-            if device == "econ":
-                st.markdown("**Voltage THD [%]**")
-                conf.THDmin = st.number_input("THD min", value=float(conf.THDmin))
-                conf.THDmax = st.number_input("THD max", value=float(conf.THDmax))
-                conf.THDdist = st.number_input("THD tick spacing",
-                                               value=float(conf.THDdist),
-                                               min_value=0.001)
-                st.markdown("**Frequency [Hz]**")
-                conf.Fmin = st.number_input("F min", value=float(conf.Fmin))
-                conf.Fmax = st.number_input("F max", value=float(conf.Fmax))
-                conf.Fdist = st.number_input("F tick spacing",
-                                             value=float(conf.Fdist),
-                                             min_value=0.001)
-            else:
-                st.markdown("**Apparent power [VA]**")
-                conf.Amax = st.number_input("Apparent max", value=float(conf.Amax))
-                conf.Adist = st.number_input("Apparent tick spacing",
-                                             value=float(conf.Adist),
-                                             min_value=0.001)
+    detected = ("%d-minute samples, power in %s"
+                % (conf.RateMin, "kW" if conf.Yformat == 1 else "W"))
+    with st.expander("Optional settings — everything below is worked out "
+                     "from your file (%s)" % detected):
+
+        st.markdown("#### Chart scales")
+        st.caption("Each scale is set from your data. Untick **Auto** to fix "
+                   "one yourself — useful for making two sites directly "
+                   "comparable.")
+
+        # families of charts, each sharing one axis, as in the notebooks
+        families = [("Power and apparent power", "Y", "kW" if conf.Yformat == 1
+                     else "W", True),
+                    ("Voltage", "U", "V", True),
+                    ("Current", "I", "A", True),
+                    ("Power factor", "PF", "-", True)]
+        if device == "econ":
+            families += [("Voltage THD", "THD", "%", True),
+                         ("Frequency", "F", "Hz", True)]
+        else:
+            families += [("Apparent power", "A", "VA", False)]
+
+        for row_start in range(0, len(families), 2):
+            cols = st.columns(2)
+            for col, (label, prefix, unit, has_min) in zip(
+                    cols, families[row_start:row_start + 2]):
+                with col:
+                    auto = st.checkbox("Auto", value=True,
+                                       key="auto_%s" % prefix)
+                    lo_attr = "%smin" % prefix if has_min else None
+                    hi_attr = "%smax" % prefix
+                    step_attr = "%sdist" % prefix
+                    lo = getattr(conf, lo_attr) if lo_attr else None
+                    hi = getattr(conf, hi_attr)
+                    step = getattr(conf, step_attr)
+                    if auto:
+                        shown = ("%g to %g, steps of %g"
+                                 % (lo, hi, step)) if lo_attr else \
+                                ("0 to %g, steps of %g" % (hi, step))
+                        st.markdown("**%s** [%s]" % (label, unit))
+                        st.caption(shown)
+                    else:
+                        st.markdown("**%s** [%s]" % (label, unit))
+                        if lo_attr:
+                            setattr(conf, lo_attr, st.number_input(
+                                "Minimum", value=float(lo),
+                                key="lo_%s" % prefix))
+                        setattr(conf, hi_attr, st.number_input(
+                            "Maximum", value=float(hi), key="hi_%s" % prefix))
+                        setattr(conf, step_attr, st.number_input(
+                            "Tick spacing", value=float(step), min_value=0.001,
+                            key="st_%s" % prefix))
+
+        house_charts = st.checkbox(
+            "Draw the charts in Equator Solar colours",
+            value=False,
+            help="Off by default. Every report issued so far used the "
+                 "original colours, and a chart that changes colour between "
+                 "reports invites the question of what else changed.")
+
+        st.divider()
+        st.markdown("#### PV simulation")
+        g1, g2 = st.columns(2)
+        with g1:
+            conf.EtaPV = st.number_input(
+                "System efficiency EtaPV", min_value=0.05, max_value=1.0,
+                value=0.80, step=0.01, format="%.2f",
+                help="Total efficiency, PV rated to AC out.")
+        with g2:
+            conf.Offset = st.number_input(
+                "Generation offset", min_value=0.0, max_value=0.9, value=0.0,
+                step=0.05, format="%.2f",
+                help="0.1 keeps simulated generation 10 % below consumption.")
+
+        st.divider()
+        st.markdown("#### Measurement handling")
+        h1, h2, h3 = st.columns(3)
+        with h1:
+            conf.RateMin = int(st.number_input(
+                "Sample rate [min]", min_value=1, step=1,
+                value=int(conf.RateMin),
+                help="Read from the timestamps in your file."))
+        with h2:
+            conf.deltatime = int(st.number_input(
+                "Clock offset [h]", value=0, step=1,
+                help="+1 if the logger clock ran an hour behind."))
+        with h3:
+            unit_index = 0 if conf.Yformat == 1.0 else 1
+            conf.Yformat = 1.0 if st.selectbox(
+                "Power unit", ["kW", "W"], index=unit_index) == "kW" else 1e-3
+
+        st.divider()
+        st.markdown("#### Report details and date range")
+        i1, i2 = st.columns(2)
+        with i1:
+            conf.location = st.text_input("Site or location",
+                                          help="Report header only.")
+            conf.project_reference = st.text_input("Project reference",
+                                                   help="Report header only.")
+        with i2:
+            if st.checkbox("Analyse part of the period only"):
+                conf.date_from = st.date_input("From", value=None)
+                conf.date_to = st.date_input("To", value=None)
+                st.caption("Rows outside the range are left out of this "
+                           "analysis. Your file is not changed.")
 
     conf.device = device
-    conf.customer = customer or "Customer"
-    conf.location = location
-    conf.project_reference = project_ref
-    conf.RateMin = int(rate)
-    conf.deltatime = int(delta)
-    conf.Yformat = 1.0 if unit == "kW" else 1e-3
+    conf.customer = customer or "Client"
     conf.PPV = ppv
-    conf.EtaPV = float(eta)
-    conf.Offset = float(offset)
-    conf.date_from = date_from
-    conf.date_to = date_to
+    st.session_state.house_charts = bool(locals().get("house_charts", False))
     st.session_state.analysis_config = conf
 
     st.divider()
@@ -566,7 +598,9 @@ elif page == PAGES[2]:
                     st.session_state.measurement[0],
                     st.session_state.irradiation[1],
                     st.session_state.irradiation[0],
-                    session=session, progress=on_progress)
+                    session=session, progress=on_progress,
+                    colours=theme.chart_settings(
+                        st.session_state.get("house_charts", False)))
         finally:
             lock.release()
         bar.empty()

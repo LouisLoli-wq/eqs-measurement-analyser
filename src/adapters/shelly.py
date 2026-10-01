@@ -50,7 +50,11 @@ def _nice(value, divisions=10):
         return 10, 1
     magnitude = 10 ** math.floor(math.log10(value))
     top = magnitude * 10
-    for mult in (1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 15, 20):
+    # a finely graded ladder, so the axis sits just above the data rather than
+    # at the next power of ten -- an axis with half its height unused makes a
+    # load profile look flat
+    for mult in (1, 1.2, 1.5, 1.8, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10,
+                 12, 15, 18, 20):
         if mult * magnitude >= value:
             top = mult * magnitude
             break
@@ -138,7 +142,7 @@ def suggest_limits(df: pd.DataFrame) -> dict:
     # power axis, in watts
     power = total_power_watts(df, rate)
     if len(power) and np.isfinite(power.max()) and power.max() > 0:
-        top, step = _nice(float(power.max()) * 1.1)
+        top, step = _nice(float(power.max()) * 1.05)
         out.update(Ymin=0, Ymax=int(top), Ydist=int(max(step, 1)))
 
     # apparent power axis, the sum of the three per-phase maxima
@@ -147,7 +151,7 @@ def suggest_limits(df: pd.DataFrame) -> dict:
     if aprt:
         total = sum(s.fillna(0) for s in aprt)
         if np.isfinite(total.max()) and total.max() > 0:
-            top, step = _nice(float(total.max()) * 1.1)
+            top, step = _nice(float(total.max()) * 1.05)
             out.update(Amax=int(top), Adist=int(max(step, 1)))
 
     # current
@@ -157,7 +161,7 @@ def suggest_limits(df: pd.DataFrame) -> dict:
                 if s is not None]
     currents = [x for x in currents if np.isfinite(x)]
     if currents:
-        top, step = _nice(max(currents) * 1.1)
+        top, step = _nice(max(currents) * 1.05)
         out.update(Imax=int(top), Idist=int(max(step, 1)),
                    Imin=-int(max(round(top * 0.05), 1)))
 
@@ -180,4 +184,8 @@ def suggest_limits(df: pd.DataFrame) -> dict:
                 lo, hi = int(mid - 30), int(mid + 30)
             out.update(Umin=lo, Umax=hi, Udist=20)
 
+    # Peak measured demand, in kW. Starting numbers for the system-size boxes
+    # only; not a sizing rule, and nothing in the analysis depends on it.
+    if len(power) and np.isfinite(power.max()):
+        out["peak_kw"] = float(power.max()) / 1000.0
     return out

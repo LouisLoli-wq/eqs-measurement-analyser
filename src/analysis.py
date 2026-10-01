@@ -159,7 +159,7 @@ def _annotate_energy_summary(dfEd: pd.DataFrame, report) -> pd.DataFrame:
 def run(config, measurement_bytes: bytes, measurement_name: str,
         irradiation_bytes: bytes, irradiation_name: str,
         session: Session | None = None,
-        progress=None) -> AnalysisResult:
+        progress=None, colours: dict | None = None) -> AnalysisResult:
     """Validate, then run every figure and summary the device supports."""
     device = config.device
     adapter = adapters.get(device)
@@ -222,6 +222,10 @@ def run(config, measurement_bytes: bytes, measurement_name: str,
     settings.update(PathMeasurement=measurement_path,
                     PathRadiation=irradiation_path,
                     OUTDIR=session.outputs)
+    if colours:
+        # colour lists only; no figure, axis or calculation is touched
+        settings.update({k: list(v) for k, v in colours.items()
+                         if k in settings or k.startswith("color")})
     result.plot_config = plots.configure(**settings)
 
     result.step_count = len(plots.STEPS)

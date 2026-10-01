@@ -2,6 +2,40 @@
 
 All notable changes to this project are recorded here. Dates are ISO.
 
+## [1.2.0] - 2026-10-01
+
+### Added
+
+- House style, taken from the Equator Solar "Site Visit & Data Capture" form
+  so the two tools read as one set: the green `#188B44`, the `#EFF3F0` page on
+  `#FFFFFF` cards, 16px cards and 12px inputs, the 1.5px field border and the
+  form's left-rule callout for every message. Light and dark both follow the
+  form's own `day` / `night` palettes. Tokens in `assets/theme.css`, loaded by
+  `src/theme.py`; Streamlit's own keys in `.streamlit/config.toml`.
+- Optional switch to draw the charts in house colours. Off by default: every
+  report issued so far used the notebooks' colours, and a chart that changes
+  colour between reports invites the question of what else changed.
+
+### Changed
+
+- Required inputs cut to four: measurement file, irradiation file, client
+  name, five system sizes. Sample rate, power unit, clock offset and every
+  chart scale are read from the file; the optional panel states what it found
+  rather than asking for it.
+- Chart scales are automatic per family, each with an Auto tick that can be
+  cleared to fix a scale by hand. The ladder is finer and the headroom 5%
+  rather than 10%, so an axis sits just above the data instead of at the next
+  power of ten.
+- The five size boxes start from measured peak demand instead of a hard-coded
+  list, which offered 150-300 kWp on a site peaking at 10 kW. Candidates to
+  simulate, not a recommendation.
+
+### Fixed
+
+- The irradiation uploader was disabled until a hidden "Upload my own" option
+  was picked, with nothing on screen saying so. It is always active now, and
+  an uploaded file simply wins over the bundled profile.
+
 ## [1.1.0] - 2026-10-01
 
 Changes prompted by the first real Econ export, `Rwera MCC 2026.08.20`.

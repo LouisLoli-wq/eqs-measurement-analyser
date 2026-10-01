@@ -44,7 +44,11 @@ def _nice(value, divisions=10):
         return 10, 1
     magnitude = 10 ** math.floor(math.log10(value))
     top = magnitude * 10
-    for mult in (1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 15, 20):
+    # a finely graded ladder, so the axis sits just above the data rather than
+    # at the next power of ten -- an axis with half its height unused makes a
+    # load profile look flat
+    for mult in (1, 1.2, 1.5, 1.8, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10,
+                 12, 15, 18, 20):
         if mult * magnitude >= value:
             top = mult * magnitude
             break
@@ -140,7 +144,7 @@ def suggest_limits(df: pd.DataFrame) -> dict:
             peaks.append(float((i_max * u_max / 1000).max()))
     peaks = [x for x in peaks if x is not None and np.isfinite(x)]
     if peaks:
-        top, step = _nice(max(peaks) * 1.1)
+        top, step = _nice(max(peaks) * 1.05)
         out.update(Ymin=0, Ymax=int(top), Ydist=int(max(step, 1)))
 
     # current
@@ -151,7 +155,7 @@ def suggest_limits(df: pd.DataFrame) -> dict:
                 if s is not None]
     currents = [x for x in currents if np.isfinite(x)]
     if currents:
-        top, step = _nice(max(currents) * 1.1)
+        top, step = _nice(max(currents) * 1.05)
         out.update(Imax=int(top), Idist=int(max(step, 1)),
                    Imin=-int(max(round(top * 0.05), 1)))
 
@@ -192,7 +196,7 @@ def suggest_limits(df: pd.DataFrame) -> dict:
             thd.append(sane.max())
     thd = [x for x in thd if np.isfinite(x)]
     if thd:
-        top, step = _nice(max(max(thd) * 1.2, 5), 5)
+        top, step = _nice(max(max(thd) * 1.05, 5), 5)
         out.update(THDmin=0, THDmax=int(top), THDdist=int(max(step, 1)))
 
     # frequency, centred on whichever nominal the site runs at
@@ -212,4 +216,11 @@ def suggest_limits(df: pd.DataFrame) -> dict:
                 out["RateMin"] = int(round(step_min))
 
     out["Yformat"] = 1.0        # Econ power columns are already kW
+
+    # Peak measured demand, in kW. Used only to put sensible starting numbers
+    # in the system-size boxes; it is not a sizing rule and nothing in the
+    # analysis depends on it.
+    total = _col(df, "Pactive total avg [kW]")
+    if total is not None and total.notna().any():
+        out["peak_kw"] = float(total.max())
     return out

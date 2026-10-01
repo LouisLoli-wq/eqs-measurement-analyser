@@ -1,0 +1,270 @@
+/*
+ * EQS Measurement Analyser -- house style.
+ *
+ * Tokens lifted from the Equator Solar "Site Visit & Data Capture" form, so
+ * the two tools look like they came from the same place:
+ *
+ *   day      base #EFF3F0  panel #FFFFFF  panel2 #F5F9F6  line #D3DBD6
+ *            ink  #0E1A14  mute  #5C6B64  accent #188B44  warn #C96E1E
+ *   night    base #000000  panel #080A09  panel2 #111513  line #222C26
+ *            ink  #F1F5F2  mute  #93A099  accent #2FBF6B  warn #F0903C
+ *
+ * Shapes are the form's too: 16px cards, 14px nested items, 12px inputs and
+ * buttons, a 1.5px border on anything you type into, and the orange
+ * left-rule callout.
+ *
+ * Streamlit's own colours come from .streamlit/config.toml; this sheet does
+ * the shapes, spacing and the pieces config.toml cannot reach.
+ */
+
+:root {
+  --eqs-base: #EFF3F0;
+  --eqs-panel: #FFFFFF;
+  --eqs-panel2: #F5F9F6;
+  --eqs-line: #D3DBD6;
+  --eqs-ink: #0E1A14;
+  --eqs-mute: #5C6B64;
+  --eqs-acc: #188B44;
+  --eqs-acc-dk: #0F6431;
+  --eqs-warn: #C96E1E;
+  --eqs-danger: #C2362F;
+  --eqs-btn-ink: #FFFFFF;
+  --eqs-focus: rgba(24, 139, 68, .20);
+  --eqs-shadow: 0 6px 18px rgba(14, 26, 20, .10);
+
+  --eqs-r-card: 16px;
+  --eqs-r-item: 14px;
+  --eqs-r-input: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --eqs-base: #000000;
+    --eqs-panel: #080A09;
+    --eqs-panel2: #111513;
+    --eqs-line: #222C26;
+    --eqs-ink: #F1F5F2;
+    --eqs-mute: #93A099;
+    --eqs-acc: #2FBF6B;
+    --eqs-acc-dk: #188B44;
+    --eqs-warn: #F0903C;
+    --eqs-danger: #FF6B6B;
+    --eqs-focus: rgba(24, 139, 68, .32);
+    --eqs-shadow: 0 10px 30px rgba(0, 0, 0, .6);
+  }
+}
+
+/* ---------------------------------------------------------------- page -- */
+
+html, body, .stApp, [data-testid="stAppViewContainer"] {
+  background: var(--eqs-base);
+  color: var(--eqs-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.block-container { padding-top: 2.2rem; max-width: 1180px; }
+
+h1, h2, h3, h4 {
+  color: var(--eqs-ink);
+  letter-spacing: -.2px;
+  font-weight: 700;
+}
+h1 { font-size: 30px; }
+h2 { font-size: 21px; }
+h3 { font-size: 17px; }
+
+[data-testid="stCaptionContainer"], .stCaption, small {
+  color: var(--eqs-mute) !important;
+  font-size: 12.5px;
+}
+
+hr, [data-testid="stDivider"] { border-color: var(--eqs-line); }
+
+/* ------------------------------------------------------------- sidebar -- */
+
+[data-testid="stSidebar"] {
+  background: var(--eqs-panel);
+  border-right: 1px solid var(--eqs-line);
+}
+[data-testid="stSidebar"] .block-container { padding-top: 1.6rem; }
+
+/* radio list reads as navigation, not as a form control */
+[data-testid="stSidebar"] [role="radiogroup"] label {
+  padding: 7px 10px;
+  border-radius: 10px;
+  margin-bottom: 2px;
+  transition: background .15s ease;
+}
+[data-testid="stSidebar"] [role="radiogroup"] label:hover {
+  background: var(--eqs-panel2);
+}
+
+/* ------------------------------------------------------------- inputs -- */
+
+.stTextInput input,
+.stNumberInput input,
+.stDateInput input,
+.stTextArea textarea,
+[data-baseweb="select"] > div {
+  background: var(--eqs-panel) !important;
+  color: var(--eqs-ink) !important;
+  border: 1.5px solid var(--eqs-line) !important;
+  border-radius: var(--eqs-r-input) !important;
+  font-size: 16px !important;
+}
+
+.stTextInput input:focus,
+.stNumberInput input:focus,
+.stTextArea textarea:focus {
+  border-color: var(--eqs-acc) !important;
+  box-shadow: 0 0 0 3px var(--eqs-focus) !important;
+}
+
+.stTextInput label, .stNumberInput label, .stDateInput label,
+.stSelectbox label, .stTextArea label, .stFileUploader label,
+.stCheckbox label, .stRadio > label {
+  font-weight: 600 !important;
+  font-size: 14.5px !important;
+  color: var(--eqs-ink) !important;
+}
+
+/* number steppers */
+.stNumberInput button {
+  background: var(--eqs-panel2) !important;
+  border-color: var(--eqs-line) !important;
+  color: var(--eqs-ink) !important;
+}
+
+/* ------------------------------------------------------------ buttons -- */
+
+.stButton > button, .stDownloadButton > button {
+  border-radius: var(--eqs-r-input);
+  border: 1.5px solid var(--eqs-line);
+  background: var(--eqs-panel);
+  color: var(--eqs-ink);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 11px 18px;
+  transition: background .15s ease, border-color .15s ease;
+}
+.stButton > button:hover, .stDownloadButton > button:hover {
+  border-color: var(--eqs-acc);
+  color: var(--eqs-acc);
+  background: var(--eqs-panel2);
+}
+
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"] {
+  background: var(--eqs-acc);
+  border-color: var(--eqs-acc);
+  color: var(--eqs-btn-ink);
+}
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+  background: var(--eqs-acc-dk);
+  border-color: var(--eqs-acc-dk);
+  color: var(--eqs-btn-ink);
+}
+
+/* ------------------------------------------------------- file uploader -- */
+
+[data-testid="stFileUploaderDropzone"] {
+  background: var(--eqs-panel2);
+  border: 1.5px dashed var(--eqs-line);
+  border-radius: var(--eqs-r-input);
+}
+[data-testid="stFileUploaderDropzone"]:hover {
+  border-color: var(--eqs-acc);
+}
+
+/* ---------------------------------------------------------- expanders -- */
+
+[data-testid="stExpander"] {
+  background: var(--eqs-panel);
+  border: 1px solid var(--eqs-line);
+  border-radius: var(--eqs-r-card);
+  box-shadow: var(--eqs-shadow);
+  overflow: hidden;
+}
+[data-testid="stExpander"] summary { font-weight: 600; font-size: 15px; }
+[data-testid="stExpander"] summary:hover { color: var(--eqs-acc); }
+
+/* ------------------------------------------------------------- alerts --
+ * The form's .note: a soft panel with a 3px rule down the left in the
+ * colour of whatever it is telling you.                                   */
+
+[data-testid="stAlert"] {
+  background: var(--eqs-panel2);
+  border: 1px solid var(--eqs-line);
+  border-left: 3px solid var(--eqs-mute);
+  border-radius: var(--eqs-r-input);
+  color: var(--eqs-ink);
+  font-size: 13.5px;
+  box-shadow: none;
+}
+[data-testid="stAlertContentInfo"]      { border-left-color: var(--eqs-acc); }
+[data-testid="stAlertContentSuccess"]   { border-left-color: var(--eqs-acc); }
+[data-testid="stAlertContentWarning"]   { border-left-color: var(--eqs-warn); }
+[data-testid="stAlertContentError"]     { border-left-color: var(--eqs-danger); }
+
+div[data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]) {
+  border-left-color: var(--eqs-warn);
+}
+div[data-testid="stAlert"]:has([data-testid="stAlertContentError"]) {
+  border-left-color: var(--eqs-danger);
+}
+div[data-testid="stAlert"]:has([data-testid="stAlertContentSuccess"]) {
+  border-left-color: var(--eqs-acc);
+}
+
+/* ------------------------------------------------------------ metrics -- */
+
+[data-testid="stMetric"] {
+  background: var(--eqs-panel);
+  border: 1px solid var(--eqs-line);
+  border-radius: var(--eqs-r-item);
+  padding: 12px 14px;
+}
+[data-testid="stMetricLabel"] {
+  color: var(--eqs-mute) !important;
+  font-size: 12.5px !important;
+  font-weight: 600;
+}
+[data-testid="stMetricValue"] {
+  color: var(--eqs-ink) !important;
+  font-size: 24px !important;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------- dataframes -- */
+
+[data-testid="stDataFrame"], [data-testid="stTable"] {
+  border: 1px solid var(--eqs-line);
+  border-radius: var(--eqs-r-item);
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------ figures -- */
+
+[data-testid="stImage"] img {
+  border: 1px solid var(--eqs-line);
+  border-radius: var(--eqs-r-item);
+  background: #FFFFFF;      /* the charts are drawn on white */
+}
+
+/* -------------------------------------------------------- progress etc -- */
+
+.stProgress > div > div > div > div { background: var(--eqs-acc); }
+.stSpinner > div { border-top-color: var(--eqs-acc) !important; }
+
+[data-baseweb="checkbox"] [data-testid="stWidgetLabel"] { font-weight: 500; }
+
+/* ------------------------------------------------------------- mobile -- */
+
+@media (max-width: 640px) {
+  .block-container { padding-left: 1rem; padding-right: 1rem; }
+  h1 { font-size: 24px; }
+  h2 { font-size: 19px; }
+}
