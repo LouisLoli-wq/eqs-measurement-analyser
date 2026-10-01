@@ -273,19 +273,19 @@ elif page == PAGES[1]:
 
     # --- irradiation ------------------------------------------------------
     st.subheader("Irradiation file")
+    st.caption("A bundled profile is used unless you upload your own. "
+               "Uploading one always wins.")
     c1, c2 = st.columns([2, 3])
     with c1:
-        bundled = st.selectbox("Bundled profile",
-                               list(BUNDLED_IRRADIATION) + ["Upload my own"])
+        bundled = st.selectbox("Bundled profile", list(BUNDLED_IRRADIATION))
     with c2:
-        irr_upload = st.file_uploader("Irradiation CSV", type=["csv", "txt"],
-                                      key="irr",
-                                      disabled=bundled != "Upload my own")
-    if bundled == "Upload my own":
-        if irr_upload is None:
-            st.info("Upload an irradiation CSV, or pick a bundled profile.")
-            st.stop()
+        irr_upload = st.file_uploader(
+            "Or upload a different irradiation CSV",
+            type=["csv", "txt"], key="irr")
+
+    if irr_upload is not None:
         st.session_state.irradiation = (irr_upload.name, irr_upload.getvalue())
+        st.success("Using your uploaded file: **%s**" % irr_upload.name)
     else:
         path = BUNDLED_IRRADIATION[bundled]
         if not os.path.exists(path):
@@ -294,6 +294,8 @@ elif page == PAGES[1]:
             st.stop()
         with open(path, "rb") as fh:
             st.session_state.irradiation = (os.path.basename(path), fh.read())
+        st.caption("Using the bundled **%s** profile. Upload a file above to "
+                   "override it." % bundled)
 
     # --- plant details ----------------------------------------------------
     st.subheader("Customer and project")
